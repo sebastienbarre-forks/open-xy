@@ -115,6 +115,13 @@ int main() {
     drawn_screen = 0;
     require(sdk_sample_screen(2) == 0);
     drawn_screen = 1;
+    // A ready screen isn't enough: the engine's record must be ours and ready too.
+    for (int state : {0, 2, -1}) {
+        ready_state = state;
+        require(sdk_sample_screen(2) == 0);
+    }
+    ready_state = 1;
+    require(sdk_sample_screen(2) == screen);
     engine = value(sampled_engine_id);
     require(sdk_sample_screen(2) == 0);
     track = 8;   // no track selected

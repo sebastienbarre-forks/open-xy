@@ -324,6 +324,14 @@ turns a continuous control in fine steps, an enum steps one choice per detent,
 and edits are saved like a synth's. The engine plays the
 sample between its outer markers; inner loop markers do not narrow it.
 
+**What this gives up.** The own screen takes over the sampler page's encoders, so
+stock's trim controls are gone on it: a player can't set the sample's start and end,
+its loop markers, or the other things that page's encoders edit, from there.
+`SampleBlock.region` still reports the markers already in the region: the whole
+sample when one is newly assigned, or whatever a preset or the same track on the
+stock sampler left. If your instrument needs trimming, give it your own controls for
+it and read them in `render_sample`. The stock sample browser and recorder are unaffected.
+
 ### Services
 
 Each service is an optional entry in `definition.json` `resources`; omitted

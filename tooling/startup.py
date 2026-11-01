@@ -61,7 +61,7 @@ def render(prefixes, effects=(), stock_page=(), sample_screens=(), effect_screen
     owned = [f'    if (page == value({prefix}_page_id)) return {prefix}_ready() == 1;'
              for prefix in prefixes if prefix not in stock_page]
     owned += [f'    if (page == value({prefix}_fx_page_id)) return {prefix}_ready() == 1;' for prefix in effect_screens]
-    sample = [f'    if (engine == value({prefix}_engine_id)) return {prefix}_screen_ready() == 1 ? value({prefix}_screen_page_id) : 0;'
+    sample = [f'    if (engine == value({prefix}_engine_id)) return {prefix}_ready() == 1 && {prefix}_screen_ready() == 1 ? value({prefix}_screen_page_id) : 0;'
               for prefix in sample_screens]
     values = dict(DECLARATIONS='\n'.join(declarations), OWNED_SCREENS='\n'.join(owned), SAMPLE_SCREENS='\n'.join(sample),
                   EFFECTS='\n'.join(f'    {prefix}_fx_register();' for prefix in effects),

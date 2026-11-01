@@ -450,11 +450,13 @@ u32 sdk_sample_param_engine(u32 track) {
     return own_controls(id) ? 0 : id;
 }
 
-// 8d588df2, project load's check of each track, and 8d581eb2, where a stored
-// track's words are copied back in: both ask the sample predicate, through its
-// alias for a sample engine, and on a yes set the track's eight words to neutral
-// (0x40000000), which a stock sampler's page doesn't use. An owned page-2 engine
-// drawing its own screen holds its controls in them, so it answers no, as a synth does.
+// 8d588df2, project load's check of each track, and 8d581eb2, in what reads as
+// stock's track paste: 8d581d48 copies a whole track object (0x53f4 bytes) to the
+// buffer at 84ffd208 and marks it kind 3, and 8d581da0, on kind 3, writes its 58 words
+// back through the writer. Both ask the sample predicate, through its alias for a
+// sample engine, and on a yes set the track's eight words to neutral (0x40000000),
+// which a stock sampler's page doesn't use. An owned page-2 engine drawing its own
+// screen holds its controls in them, so it answers no, as a synth does.
 u32 sdk_sample_neutral_engine(u32 id) {
     return own_controls(id) ? 0 : stock<u32(u32)>(0x8d5b79c0)(id);
 }
