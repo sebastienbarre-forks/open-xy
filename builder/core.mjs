@@ -3,7 +3,7 @@
 // Every firmware rule (edits, hooks, identity ranges, catalog offsets, table
 // bytes) comes from the reviewed profile, authenticated by this digest. The
 // Python SDK reads the same constant.
-export const PROFILE_SHA256 = '97538967033f734090417dd276a436e09167933d124b1bdc3181f2d3658af197';
+export const PROFILE_SHA256 = 'c3bc5c5539d7e66f5ab22056be6bf3beb4630ec2339f2ca4474aa6f58dfbe1b0';
 export function requireThat(ok, message) { if (!ok) throw new Error(message); }
 const check = requireThat;
 const utf8 = new TextEncoder();
@@ -119,7 +119,8 @@ export function validIdentity(rules, kind, identity) {
   // An effect is on the stock FX page, or on a relocated page when it draws its own (SDK 1.7).
   if (kind === 'effect') return rules.effects.includes(n) && (page === rules.effect_page || page > rules.page_none && page < rules.pages);
   if (!(n > 0 && n < rules.engines && n !== rules.engine_none && !rules.stock_engines.includes(n))) return false;
-  return kind === 'sample' ? n > rules.engine_none && rules.sample_pages.includes(page)
+  // A sample engine is on a stock sample page, or on a relocated page when it draws its own screen (SDK 1.8).
+  return kind === 'sample' ? n > rules.engine_none && (rules.sample_pages.includes(page) || page > rules.page_none && page < rules.pages)
     : kind === 'synth' && page > rules.page_none && page < rules.pages;
 }
 
@@ -131,10 +132,15 @@ export function validRequest(rules, kind, identity) {
   const slot = kind === 'player' ? 'player' : kind === 'effect' ? 'effect' : 'engine';
   if (Object.keys(identity).sort().join() !== [slot, 'page'].sort().join() || identity[slot] !== null)
     return validIdentity(rules, kind, identity);
-  // An effect that draws its own page (SDK 1.7) asks for a page as a synth does.
+  // An effect (SDK 1.7) or a sample engine (SDK 1.8) that draws its own page asks for a page as a synth does.
   return kind === 'effect' ? identity.page === rules.effect_page || identity.page === null
-    : kind === 'sample' ? rules.sample_pages.includes(identity.page) : ['synth', 'player'].includes(kind) && identity.page === null;
+    : kind === 'sample' ? rules.sample_pages.includes(identity.page) || identity.page === null
+    : ['synth', 'player'].includes(kind) && identity.page === null;
 }
+// Whether a machine that needn't draw (an effect or a sample engine) is on a page of its own:
+// tooling.machines.owns_page.
+const ownsPage = (rules, kind, page) => kind === 'effect' ? page !== rules.effect_page
+  : kind === 'sample' && !rules.sample_pages.includes(page);
 // Whether numbers are what a machine asks for: the same fields, equal where it names one.
 const fits = (requested, numbers) => Object.keys(requested).length === Object.keys(numbers).length &&
   Object.keys(requested).every(k => requested[k] === null || requested[k] === numbers[k]);
@@ -205,20 +211,23 @@ export function numberLayout(rules, fixed, layout, machines) {
   }
   const fresh = [];
   for (const [name, kind, requested] of [...machines].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
-    const ownPage = kind === 'effect' && requested.page !== rules.effect_page;
-    if (Object.hasOwn(numbers, name) && kind === 'effect' && ownPage !== (numbers[name].page !== rules.effect_page)) {
-      // An effect that came to draw its own page (SDK 1.7), or stopped: it
-      // keeps its effect number and is given a page, or gives its page up.
+    const ownPage = ownsPage(rules, kind, requested.page);
+    if (Object.hasOwn(numbers, name) && ownPage !== ownsPage(rules, kind, numbers[name].page)) {
+      // An effect (SDK 1.7) or sample engine (SDK 1.8) that came to draw its own page, or
+      // stopped: it keeps its number and is given a page, or gives its page up. Only a
+      // sample engine forking the sampler draws.
+      check(kind !== 'sample' || (ownPage ? numbers[name].page : requested.page) === 2,
+        `${name} now forks another stock sampler; the layout holds its numbers for the old one`);
       for (const [key, holder] of [...holders]) if (holder === name && key.startsWith('page ')) holders.delete(key);
       if (ownPage) fresh.push([name, kind, {...numbers[name], page: null}, ['page']]);
-      else numbers[name] = {...numbers[name], page: rules.effect_page};
+      else numbers[name] = {...numbers[name], page: requested.page};
     } else if (Object.hasOwn(numbers, name)) {
       check(validIdentity(rules, kind, numbers[name]), `${name}: the layout gives it numbers it cannot use`);
-      check(kind !== 'sample' || numbers[name].page === requested.page,
+      check(kind !== 'sample' || ownPage || numbers[name].page === requested.page,
         `${name} now forks another stock sampler; the layout holds its numbers for the old one`);
     } else {
-      fresh.push([name, kind, {...requested},
-        kind === 'player' ? ['player', 'page'] : kind === 'effect' ? (ownPage ? ['effect', 'page'] : ['effect']) : kind === 'synth' ? ['engine', 'page'] : ['engine']]);
+      const slot = kind === 'player' ? 'player' : kind === 'effect' ? 'effect' : 'engine';
+      fresh.push([name, kind, {...requested}, ['synth', 'player'].includes(kind) || ownPage ? [slot, 'page'] : [slot]]);
     }
   }
   // An effect number is also held as an engine number (occupied).
@@ -279,6 +288,9 @@ function numberSymbols(kit, selection, numbers) {
     const own = selection.includes(m.id) ? numbers[m.id] : null;
     if (m.kind === 'player') Object.assign(symbols, {[m.prefix + '_player_id']: own?.player ?? 0, [m.prefix + '_page_id']: own?.page ?? 0});
     else if (m.kind === 'effect') Object.assign(symbols, {[m.prefix + '_fx_id']: own?.effect ?? 0, [m.prefix + '_fx_page_id']: own?.page ?? 0});
+    else if (m.kind === 'sample' && m.identity.page === null)
+      // A sample engine's own screen has the page; the engine stays on the sampler's (2).
+      Object.assign(symbols, {[m.prefix + '_engine_id']: own?.engine ?? 0, [m.prefix + '_page_id']: own ? 2 : 0, [m.prefix + '_screen_page_id']: own?.page ?? 0});
     else Object.assign(symbols, {[m.prefix + '_engine_id']: own?.engine ?? 0, [m.prefix + '_page_id']: own?.page ?? 0});
   }
   return symbols;
