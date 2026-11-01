@@ -1040,8 +1040,8 @@ def main(argv=None, command=None):
             for path in sorted(p for p in candidate.rglob('*') if p.is_file()):
                 print('  ' + path.relative_to(candidate).as_posix())
             print('Machine numbers: ' + str(output / 'layout.json') + ' (pass it as --layout to your next build)')
-            print('With aft-mtp-cli (android-file-transfer-linux) installed, copy everything in one step: ' +
-                  f"aft-mtp-cli 'put {candidate / 'os.ldr'}' 'mkdir content' 'cd content' 'put {candidate / 'content/display'}' 'put {candidate / 'content/op1_factory.json'}' 'mkdir presets' 'cd presets' 'put {candidate / 'content/presets'}'")
+            print('With the OP-XY in file-transfer mode, copy everything in one step: ' +
+                  f'python sdk.py device push {candidate}')
         return 0
     except (ValueError, OSError, KeyError, ET.ParseError, subprocess.SubprocessError) as error:
         print('ERROR: ' + str(error), file=sys.stderr)
