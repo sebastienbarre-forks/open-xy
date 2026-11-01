@@ -30,6 +30,7 @@ static unsigned packet_size, extended_packets, plain_packets;
 extern "C" {
 opxy::u32 sdk_sample_alias(opxy::u32) __asm__("sdk_sample_alias");
 opxy::u32 sdk_sample_neutral_engine(opxy::u32) __asm__("sdk_sample_neutral_engine");
+opxy::u32 sdk_screen_sample_page() { return 0; }
 const SampleMachine sdk_sample_machines[] = {
     {reinterpret_cast<const char*>(35), 7, owned, defaults, assign, control, nullptr, 0, nullptr, nullptr, nullptr, nullptr, slice_clock},
     {reinterpret_cast<const char*>(36), 2, owned, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr},
