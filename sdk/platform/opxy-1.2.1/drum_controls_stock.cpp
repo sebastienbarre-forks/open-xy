@@ -3,6 +3,7 @@
 // the press and key hooks arrive through drum_page.s and sample_hooks.s.
 // Machine policy is in the generated sample callbacks.
 #include "sample_machines.hpp"
+#include "drum_machines.hpp"
 #include "keyboard_octaves.hpp"
 #include "stock.hpp"
 #include "synth_controls.hpp"
@@ -348,8 +349,10 @@ u32 sdk_sample_pad_paste(u32 track, u32 key) {
 // GUI-side lookup has a valid project context, so it also publishes the
 // octave for audio. Returns kNotOwned to let stock continue.
 u32 sdk_sample_key(u32 track, u32 key) {
-    if (track < kTracks && sample_page(track_engine(track)) == 2) return 0;
-    if (track >= kTracks || sample_page(track_engine(track)) != 7) return kNotOwned;
+    if (track >= kTracks) return kNotOwned;
+    const u32 engine = track_engine(track);
+    if (sample_page(engine) == 2) return 0;
+    if (sample_page(engine) != 7 && !sdk_drum_machine(engine)) return kNotOwned;
     const i32 octave = stock<i32(u32)>(0x8d58f65c)(track);
     sdk_publish_octave(track, octave);
     return stock<u32(u32, i32)>(0x8d5b8688)(key, octave) + 53;
@@ -360,6 +363,7 @@ u32 sdk_sample_key(u32 track, u32 key) {
 // stepping and lock publication. Keep the real engine ID and all other
 // parameter paths unchanged; a conflicting/unowned registration stays stock.
 u32 sdk_sample_live_pitch_kind(u32 id) {
+    if (sdk_drum_machine(id)) return 0;
     if (drum_controls(id)) return 1;
     return stock<u32(u32)>(0x8d5b79f0)(id);
 }

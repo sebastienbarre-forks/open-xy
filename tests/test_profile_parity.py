@@ -53,7 +53,7 @@ class ProfileParity(unittest.TestCase):
     def test_identity_rules_agree(self):
         rules = self.profile['identities']
         span = range(-1, max(rules['engines'], rules['pages']) + 2)
-        cases = [(kind, {'engine': n, 'page': page}) for kind in ('synth', 'sample') for n in span for page in span]
+        cases = [(kind, {'engine': n, 'page': page}) for kind in ('synth', 'drum', 'sample') for n in span for page in span]
         cases += [('effect', {'effect': n, 'page': page}) for n in range(-1, 24) for page in (0, 2, 7, 20, 21, 22, 82)]
         cases += [('synth', {'engine': 34}), ('synth', {'engine': 34, 'page': 82, 'effect': 1}),
                   ('synth', {'engine': True, 'page': 82}), ('effect', {'engine': 11, 'page': 21})]
@@ -67,7 +67,7 @@ class ProfileParity(unittest.TestCase):
         # What a kit machine may ask for: valid numbers, or SDK 1.5's null where the layout gives one.
         rules = self.profile['identities']
         pages = (None, -1, 0, 2, 7, 21, 81, 82, 127, 128, 255, 256)
-        cases = [(kind, {'engine': n, 'page': page}) for kind in ('synth', 'sample')
+        cases = [(kind, {'engine': n, 'page': page}) for kind in ('synth', 'drum', 'sample')
                  for n in (None, 0, 2, 33, 34, 36, 62, 63, 255, 256) for page in pages]
         cases += [('effect', {'effect': n, 'page': page}) for n in (None, 0, 1, 8, 9) for page in pages]
         cases += [('synth', {'engine': None}), ('sample', {'page': 7}), ('effect', {'engine': None, 'page': 21}),
@@ -76,7 +76,8 @@ class ProfileParity(unittest.TestCase):
         expected = [python_request(rules, kind, identity) for kind, identity in cases]
         self.assertEqual(browser(dict(rules=rules, identities=[], requests=cases, redirects=[]))['requests'], expected)
         self.assertEqual([request for request, accepted in zip(cases, expected) if accepted and None in request[1].values()],
-                         [('synth', {'engine': None, 'page': None}), ('sample', {'engine': None, 'page': None}),
+                         [('synth', {'engine': None, 'page': None}), ('drum', {'engine': None, 'page': None}),
+                          ('sample', {'engine': None, 'page': None}),
                           ('sample', {'engine': None, 'page': 2}), ('sample', {'engine': None, 'page': 7}),
                           ('effect', {'effect': None, 'page': None}),
                           ('effect', {'effect': None, 'page': 21})])
