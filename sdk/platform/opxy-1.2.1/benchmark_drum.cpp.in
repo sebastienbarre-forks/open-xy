@@ -22,7 +22,7 @@ opxy::benchmark::Stats @PREFIX@_benchmark(opxy::u32 run) {
     using namespace opxy;
     using namespace opxy::benchmark;
     const u32 single = @MODEL_COUNT@ * 3u;
-    const bool one = run >= 1 && run <= single, choke = run == single + 1, ceiling = run == single + 2;
+    const bool one = run >= 1 && run <= single, choke = run == single + 1;
     const u32 sounding = one ? 1 : choke ? 2 : kBenchmarkVoices;
     u32 model = one ? (run - 1) / 3 : benchmark_model, level = one ? (run - 1) % 3 : benchmark_level;
     // A kit's own run plays each key as it starts, unmarked, from its defaults.
@@ -48,8 +48,9 @@ opxy::benchmark::Stats @PREFIX@_benchmark(opxy::u32 run) {
             // Two voices taking turns on one key, each cutting the last.
             if (block % 8u == 0) @PREFIX@_start(voices_of[(block / 8u) % 2u], 53);
         } else {
+            // Each voice on a key of its own, or the same-key choke would cut them down to one.
             for (u32 v = 0; v < sounding; ++v)
-                if ((block + v * 5u) % kBenchmarkHit == 0) @PREFIX@_start(voices_of[v], ceiling || one ? 53 : 53 + v % 24u);
+                if ((block + v * 5u) % kBenchmarkHit == 0) @PREFIX@_start(voices_of[v], 53 + v % 24u);
         }
         spent = cycles() - spent;
         for (u32 v = 0; v < sounding; ++v) {
