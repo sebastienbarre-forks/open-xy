@@ -722,12 +722,13 @@ names type 7 `fm slap`, and its `params` are the top halves of the four
 words. On the audio side the note payload's first word is stock's reading of
 that byte, `(6 type + group)` over 66 bins (`8d5ad6ec`), so type 7 is bins
 42..47. Every other saved pad field is audible (`pan`, `gain`, `tune`,
-`group`) or not exported in presets (`+0x19`), so the layout holds at most 16
-models. Unmarked pads, including the earlier tag-10 eight-value layout, use
+`group`) or not exported in presets (`+0x19`), which is why a kit of more than 16
+models needs the prefix code. Unmarked pads, including the earlier tag-10 eight-value layout, use
 the key's defaults. Stock's per-key editor (`8d4d5f60`, jump table at
 `84039070`) gives controls 0..3 the four words and Shift's encoders 4..7 the
 type, `+0x14`, pan (`+0x1e`) and gain (`+0x1d`); the SDK gives Shift's first
-encoder the model and the others their shown control. Track modulation is
+encoder the model (or a group, with the second the model in it), one the choke group,
+and the others nothing. Track modulation is
 applied after decoding. GUI edits repack and use the stock dirty/publication
 calls; no audio callback writes preset state or performs file I/O.
 

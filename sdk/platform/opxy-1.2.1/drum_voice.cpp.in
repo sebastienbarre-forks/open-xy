@@ -140,6 +140,9 @@ int @PREFIX@_destroy(void* self) {
 void* @PREFIX@_factory(opxy::u32 index, opxy::u32 track) {
     if (index >= kVoiceIndices) return nullptr;
     Handle* handle = &handles[index];
+    // Stock asks for an index's object again before each note it starts there: a
+    // voice the index still holds belongs to a note that has ended.
+    if (Slot* slot = held(handle)) release(slot);
     handle->vtable = @PREFIX@_vtable;
     handle->key = 53;
     handle->track = track;

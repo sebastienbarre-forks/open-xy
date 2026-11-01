@@ -133,7 +133,7 @@ export function validRequest(rules, kind, identity) {
     return validIdentity(rules, kind, identity);
   // An effect that draws its own page (SDK 1.7) asks for a page as a synth does.
   return kind === 'effect' ? identity.page === rules.effect_page || identity.page === null
-    : kind === 'sample' ? rules.sample_pages.includes(identity.page) : ['synth', 'player'].includes(kind) && identity.page === null;
+    : kind === 'sample' ? rules.sample_pages.includes(identity.page) : ['synth', 'drum', 'player'].includes(kind) && identity.page === null;
 }
 // Whether numbers are what a machine asks for: the same fields, equal where it names one.
 const fits = (requested, numbers) => Object.keys(requested).length === Object.keys(numbers).length &&
@@ -814,7 +814,7 @@ export async function buildAssets(kit, selection, catalog, numbers) {
   const machines = kit.machines.filter(m => selection.includes(m.id));
   // Each machine's entry ends its stock list; the offsets are bound to the
   // authenticated stock catalog (tooling.native.extend_catalog).
-  const groups = {engine_types: machines.filter(m => ['synth', 'sample'].includes(m.kind)),
+  const groups = {engine_types: machines.filter(m => ['synth', 'drum', 'sample'].includes(m.kind)),
     fx_types: machines.filter(m => m.kind === 'effect'), seq_types: machines.filter(m => m.kind === 'player')};
   const inserts = Object.entries(kit.profile.stock_catalog_inserts).sort((a, b) => b[1] - a[1]);
   check(inserts.map(([key]) => key).sort().join() === Object.keys(groups).sort().join(), 'Unexpected catalog insertion points');

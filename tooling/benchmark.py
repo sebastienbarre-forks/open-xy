@@ -129,7 +129,8 @@ def combined_positions(results):
 def generate(directory, machines, sweep=False):
     machines = [m for m in machines if m.kind != 'player']
     declarations, rows, settings, defaults = [], [], [], []
-    for index, m in enumerate(benchmarked(machines)):
+    for m in benchmarked(machines):
+        index = len(rows)   # machines[] in benchmark.cpp.in: a drum kit has a row per run
         swept = sweep_settings(m) if sweep and m.kind == 'synth' else []
         if swept:
             # A row per setting holds only its control and value; the defaults beside it

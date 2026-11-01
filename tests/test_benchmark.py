@@ -49,6 +49,11 @@ class Benchmark(unittest.TestCase):
                          {(m, l) for m in range(3) for l in (0, 64, 127)})
         self.assertEqual(all(c['benchmark'] == 'opxy-drum-callback-v1' for c in own[:-1]), True)
         self.assertEqual(case_label(own[1]), 'model 0 at 64')
+        # A synth after a kit keeps its sweep: its settings name its own row.
+        with tempfile.TemporaryDirectory() as folder:
+            source = generate(folder, [drum, fixture('probesynth')], sweep=True).read_text(encoding='utf-8')
+        row = len(drum_cases(drum))
+        self.assertIn('    {%d, {' % row, source)
         with tempfile.TemporaryDirectory() as folder:
             source = generate(folder, [drum]).read_text(encoding='utf-8')
         for run in range(len(drum_cases(drum))):

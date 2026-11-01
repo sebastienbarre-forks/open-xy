@@ -100,6 +100,13 @@ int main() {
     CHECK(!probe_factory(256, 0));
     CHECK(rendered(0) == 0);
     CHECK(!is_active(0));
+    // Stock asks for an index's object again before each note: the note that ended
+    // there frees its voice, so no voice is lost to a retired note.
+    note(9, 53);
+    CHECK(initialized[10] == 1);
+    const unsigned freed = destroyed[10];
+    CHECK(objects[9] = probe_factory(9, 1));
+    CHECK(destroyed[10] == freed + 1 && rendered(9) == 0);
     // Track one's octave turns raw note 53 into pad 65; defaults must use 65.
     sdk_track_octaves[1] = 1;
     note(1, 53);

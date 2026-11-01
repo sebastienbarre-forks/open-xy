@@ -61,9 +61,10 @@ opxy::benchmark::Stats @PREFIX@_benchmark(opxy::u32 run) {
         stats.add(spent);
     }
     for (u32 v = 0; v < sounding; ++v) @PREFIX@_destroy(voices_of[v]);
-    // A level can silence a model; what it cost still counts, so those runs always report.
+    // A level can silence a model, even the heaviest; what it cost still counts, so
+    // those runs always report. Only the kit's own keys must sound.
+    if (run != 0) stats.audible = 1;
     if (one) {
-        stats.audible = 1;
         const u32 average = stats.total_high ? 0xffffffffu : stats.total_low / blocks;
         if (run == 1 || average > benchmark_most) { benchmark_most = average; benchmark_model = model; benchmark_level = level; }
     }

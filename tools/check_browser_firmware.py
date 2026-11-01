@@ -117,7 +117,7 @@ def main():
         require(json.loads(actual_catalog) == catalog, 'Browser catalog differs')
         expected_files = {'os.ldr': expected, 'content/op1_factory.json': actual_catalog}
         for machine in selected:
-            if machine['kind'] in ('synth', 'sample'):
+            if machine['kind'] in ('synth', 'drum', 'sample'):
                 name = 'content/presets/' + machine['id'] + '/default.json'
                 data = (prefix / name).read_bytes()
                 preset = json.loads(data)
