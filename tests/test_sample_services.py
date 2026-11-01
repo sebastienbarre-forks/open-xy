@@ -106,7 +106,7 @@ class SampleServices(unittest.TestCase):
     def test_saved_settings_tuning_and_trim_bounds(self):
         self.run_fixture("stock_sample")
 
-    def test_overview_reads_a_bounded_slice_a_frame_and_releases_what_it_borrows(self):
+    def test_overview_is_read_by_the_worker_and_follows_the_sample(self):
         self.run_fixture('sample_overview')
 
     def test_preset_scan_hides_factory_presets_of_engines_not_installed(self):

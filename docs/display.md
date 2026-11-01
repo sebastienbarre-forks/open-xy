@@ -216,14 +216,16 @@ engine plays it.
 
 | Field | Contract |
 | --- | --- |
+| `generation` | Changes whenever a different overview is published, including when the same file is replaced or reloaded; never 0 once loaded. Redraw a waveform when it moves |
 | `assigned` | 0 while the track holds no sample: say how to load one |
-| `loaded` | 0 until every peak has been read, while the sample loads and for a few frames after |
-| `frames`, `rate` | The whole sample's length and rate; 0 until it loads |
-| `peaks` | 64 bins of equal length across the whole sample, each its largest magnitude, 0..255 |
-| `begin`, `end` | The outer markers, in frames, as the engine plays them |
+| `loaded` | 0 until the overview is ready, while the sample loads and the file worker reads it. The fields below it are then 0, never the last sample's |
+| `frames`, `rate`, `channels` | The whole sample's length, rate and channels |
+| `begin`, `end`, `reverse` | The outer markers, in frames, as the engine plays them, and 1 if it plays backwards. These follow edits in any frame |
+| `low`, `high` | 96 bins of equal length across the whole sample: the smallest and largest 16-bit value of any channel in each |
 
-The SDK reads a bounded slice of the sample before each frame of the screen,
-so a long sample fills in over a few frames. Audio callbacks never call it.
+The file worker reads the sample in the background; the screen only copies the
+result, so a long sample never stalls a frame, and the overview follows the sample
+through replacement, eviction and reload. Audio callbacks never call it.
 In the browser preview it stays empty unless the host writes one through the
 `opxy_display_sample` export.
 

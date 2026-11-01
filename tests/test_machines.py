@@ -398,13 +398,13 @@ class OutsideMachines(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'stock sample page'):
             machines.machine_at(folder)
 
-    def test_only_a_sample_engines_own_screen_reads_the_overview_from_sdk_1_10(self):
+    def test_only_a_sample_engines_own_screen_reads_the_overview_from_sdk_1_8(self):
         include = '#include <opxy/sample_overview.hpp>\n'
         # A synth at its own version, or one the header doesn't yet exist in.
         synth = self.copy('probesynth')
         source = synth / 'display.cpp'
         source.write_text(include + source.read_text(encoding='utf-8'), encoding='utf-8')
-        self.numberless(synth, sdk='1.9')
+        self.numberless(synth, sdk='1.7')
         with self.assertRaisesRegex(ValueError, r'A sample overview \(opxy/sample_overview.hpp\) needs "sdk": "1.8"'):
             machines.machine_at(synth)
         self.numberless(synth, sdk='1.8')
