@@ -25,6 +25,8 @@ opxy::u32 sdk_sample_region_control(opxy::u32, opxy::u32, const opxy::u32*, opxy
 opxy::u32 sdk_sample_page_turn(opxy::u32, opxy::u32, const opxy::u32*) __asm__("sdk_sample_page_turn");
 opxy::u32 sdk_sample_param_engine(opxy::u32) __asm__("sdk_sample_param_engine");
 opxy::u32 sdk_sample_neutral_engine(opxy::u32) __asm__("sdk_sample_neutral_engine");
+opxy::u32 sdk_screen_visible(opxy::u32) __asm__("sdk_screen_visible");
+opxy::u32 sdk_screen_sample_page() __asm__("sdk_screen_sample_page");
 opxy::u32 sdk_sample_selected_engine() __asm__("sdk_sample_selected_engine");
 opxy::u32 sdk_sample_live_pitch_kind(opxy::u32) __asm__("sdk_sample_live_pitch_kind");
 opxy::u32 sdk_sample_key(opxy::u32, opxy::u32) __asm__("sdk_sample_key");
@@ -448,6 +450,14 @@ u32 sdk_sample_page_turn(u32 object, u32 encoder, const u32* event) {
 u32 sdk_sample_param_engine(u32 track) {
     const u32 id = track_engine(track);
     return own_controls(id) ? 0 : id;
+}
+
+// 8d5214b0: whether the compositor paints `page` this frame, stock's answer
+// (8d51fc78: the selected page or its companion), and also a sample engine's
+// own screen while its stock sample page is selected.
+u32 sdk_screen_visible(u32 page) {
+    if (stock<u32(u32)>(0x8d51fc78)(page)) return 1;
+    return page && page == sdk_screen_sample_page();
 }
 
 // 8d588df2, project load's check of each track, and 8d581eb2, in what reads as
