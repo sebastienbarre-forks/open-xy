@@ -689,23 +689,23 @@
       "maintainer": "mmockett",
       "status": "published",
       "repository": "https://github.com/mmockett/OP-XY-MNMD",
-      "tag": "v1.2.0",
-      "commit": "1dbf4540db56448b5d99a08f424f54233bdb462f",
+      "tag": "v1.2.1",
+      "commit": "1554feeb760307f18d1807f61d49f2bb0301f07b",
       "path": "machines/mdkit",
       "cpu": {
         "benchmark": "opxy-drum-callback-v1",
-        "commit": "1dbf4540db56448b5d99a08f424f54233bdb462f",
-        "firmware_sha256": "b567d264a1c472697fb1c165a70a3cecf7e230c902ab41cd1f8bcc210ebc9428",
+        "commit": "1554feeb760307f18d1807f61d49f2bb0301f07b",
+        "firmware_sha256": "d060d53f4e431ad0b3d43c015bb7fcacaeaccba52cc166ea190d0d954809bcf3",
         "runs": 1,
-        "block_percent": 4.93019,
-        "midpoint_percent": 4.93019,
-        "kit_percent": 31.226062,
-        "choke_percent": 6.218051,
-        "ceiling_percent": 76.090639,
+        "block_percent": 3.091478,
+        "midpoint_percent": 3.091478,
+        "kit_percent": 24.327459,
+        "choke_percent": 4.142824,
+        "ceiling_percent": 49.039445,
         "worst_model": {
           "run": "voice",
           "voices": 1,
-          "model": 26,
+          "model": 29,
           "level": 64
         }
       }
