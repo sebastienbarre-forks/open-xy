@@ -1,6 +1,7 @@
 // Host contract checks for generated startup glue: two own-page synths
 // (first, second), two stock-page sample engines, one of them (drawn) with its
-// own screen, and one effect.
+// own screen, an own-page effect and a player. Both screen registries must
+// coexist after SDK integration.
 #include <startup.cpp>
 #include <cstdio>
 #include <cstdlib>
@@ -40,6 +41,10 @@ opxy::platform::Address opxy::platform::host_stock_address(Address address) {
 int first_screen_register() { calls += "first-page "; return screens; }
 int second_screen_register() { calls += "second-page "; return 1; }
 int effect_fx_register() { calls += "effect "; return 1; }
+const char effect_fx_page_id[1] = {};
+int effect_screen_register() { calls += "effect-page "; return 1; }
+int effect_ready() { calls += "effect? "; return ready_state; }
+int player_screen_register() { calls += "player-page "; return 1; }
 u32 stock_gui_role() { calls += "role "; return gui; }
 u32 stock_catalog_insert(void*, const void*, u32 id) { inserted = id; return 7; }
 int sdk_stock_engine_known(const void*) { return named && std::string(named) == "prism"; }
@@ -57,7 +62,7 @@ static int installed(const char* name) {
 int main() {
     // The preset scan's engine check: stock engines, then this build's machines by name.
     require(installed("prism") == 1 && installed("first") == 1 && installed("sampled") == 1);
-    require(installed("gone") == 0 && installed("effect") == 0);
+    require(installed("gone") == 0 && installed("effect") == 0 && installed("player") == 0);
     // Effects register on both roles, before the role check; engines in ledger order on audio.
     sdk_startup_synth();
     require(calls == "effect role first second sampled drawn ");
@@ -67,11 +72,11 @@ int main() {
     // GUI role: each own page guards only its own engine; stock pages need none.
     calls.clear();
     sdk_startup_screen();
-    require(calls == "first-page first second-page second sampled drawn-page drawn ");
+    require(calls == "effect-page first-page first second-page second sampled drawn-page drawn player-page ");
     // A sample engine plays without its own screen: the screen never holds it back.
     calls.clear(); screens = false; drawn_screen = 0;
     sdk_startup_screen();
-    require(calls == "first-page second-page second sampled drawn-page drawn ");
+    require(calls == "effect-page first-page second-page second sampled drawn-page drawn player-page ");
     drawn_screen = 1;
 
     const u32 first = value(first_engine_id), second = value(second_engine_id);
@@ -93,10 +98,12 @@ int main() {
     calls.clear();
     require(sdk_screen_owned(value(second_page_id)) == 1 && calls == "second? ");
     require(sdk_screen_owned(value(first_page_id)) == 1);
+    require(sdk_screen_owned(value(effect_fx_page_id)) == 1);
     require(sdk_screen_owned(0) == 0 && sdk_screen_owned(value(first_engine_id)) == 0);
     for (int state : {0, 2, -1}) {
         ready_state = state;
         require(sdk_screen_owned(value(first_page_id)) == 0);
+        require(sdk_screen_owned(value(effect_fx_page_id)) == 0);
     }
     ready_state = 1;
 

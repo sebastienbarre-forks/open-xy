@@ -57,7 +57,7 @@ class ProfileParity(unittest.TestCase):
         cases += [('effect', {'effect': n, 'page': page}) for n in range(-1, 24) for page in (0, 2, 7, 20, 21, 22, 82)]
         cases += [('synth', {'engine': 34}), ('synth', {'engine': 34, 'page': 82, 'effect': 1}),
                   ('synth', {'engine': True, 'page': 82}), ('effect', {'engine': 11, 'page': 21})]
-        # Before SDK 1.10 a sample engine's own screen had a key of its own; no longer.
+        # Before SDK 1.8 a sample engine's own screen had a key of its own; no longer.
         cases += [('sample', {'engine': 40, 'page': 2, 'screen': 90})]
         expected = [python_accepts(rules, kind, identity) for kind, identity in cases]
         self.assertEqual(browser(dict(rules=rules, identities=cases, redirects=[]))['identities'], expected)

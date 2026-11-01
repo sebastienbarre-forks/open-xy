@@ -259,11 +259,9 @@ class OutsideMachines(unittest.TestCase):
         for version in ('1.1', '1.2', '1.3', '1.4'):
             self.rename('fmcopy', self.free, version)
             self.assertEqual(machines.machine_at(self.folder).id, 'fmcopy')
-        # Versions compare as numbers: 1.10 is after 1.9, and 1.11 is ahead of this SDK.
-        for version in ('1.5', '1.6', '1.7', '1.8', '1.9', '1.10'):
+        for version in ('1.5', '1.6', '1.7', '1.8'):
             self.numberless(self.folder, sdk=version)
             self.assertEqual(machines.machine_at(self.folder).id, 'fmcopy')
-        self.assertGreater(machines.sdk_version('1.10'), machines.sdk_version('1.9'))
         future = '%d.%d' % (machines.SDK_VERSION[0], machines.SDK_VERSION[1] + 1)
         for version in ('0.9', '2.0', future, '1', 'latest', None):
             with self.subTest(version=version):
@@ -366,24 +364,24 @@ class OutsideMachines(unittest.TestCase):
         synth = json.loads((FOLDER / 'probesynth/definition.json').read_text(encoding='utf-8'))
         definition['resources']['display'] = synth['resources']['display']
         (folder / 'definition.json').write_text(json.dumps(definition), encoding='utf-8')
-        self.numberless(folder, base='drumSampler', sdk='1.10')
+        self.numberless(folder, base='drumSampler', sdk='1.8')
         with self.assertRaisesRegex(ValueError, 'Only a sample engine forking the sampler'):
             machines.machine_at(folder)
         # Every released SDK that builds an earlier version refuses a sample engine's
         # display, so a machine declaring one must name the version that first has it.
-        for version in ('1.5', '1.6', '1.9'):
+        for version in ('1.5', '1.6', '1.7'):
             self.numberless(folder, base='sampler', sdk=version)
             with self.subTest(version=version), self.assertRaisesRegex(
-                    ValueError, r'''A sample engine's own screen \(resources.display\) needs "sdk": "1.10"'''):
+                    ValueError, r'''A sample engine's own screen \(resources.display\) needs "sdk": "1.8"'''):
                 machines.machine_at(folder)
         # The form before SDK 1.5 names no version that has the feature, and gives no page.
         self.numberless(folder, base=None, sdk='1.4', identity={'engine': 47, 'page': 2, 'screen': 90})
-        with self.assertRaisesRegex(ValueError, 'needs "sdk": "1.10"'):
+        with self.assertRaisesRegex(ValueError, 'needs "sdk": "1.8"'):
             machines.machine_at(folder)
-        self.numberless(folder, base=None, sdk='1.10', identity={'engine': 47, 'page': 2, 'screen': 90})
+        self.numberless(folder, base=None, sdk='1.8', identity={'engine': 47, 'page': 2, 'screen': 90})
         with self.assertRaisesRegex(ValueError, 'Remove "identity"'):
             machines.machine_at(folder)
-        self.numberless(folder, base='sampler', sdk='1.10')
+        self.numberless(folder, base='sampler', sdk='1.8')
         m = machines.machine_at(folder)
         self.assertEqual((m.display, m.identity), ('drawing', {'engine': None, 'page': None}))
         # The layout gives the screen a page from its own place, as it gives a synth's,
@@ -394,7 +392,7 @@ class OutsideMachines(unittest.TestCase):
         # Without a display it keeps the stock page it forks, and may not ask for another.
         definition['resources'].pop('display')
         (folder / 'definition.json').write_text(json.dumps(definition), encoding='utf-8')
-        self.numberless(folder, base='sampler', sdk='1.10')
+        self.numberless(folder, base='sampler', sdk='1.8')
         self.assertEqual(machines.machine_at(folder).identity, {'engine': None, 'page': 2})
         self.numberless(folder, base=None, sdk='1.4', identity={'engine': 47, 'page': 90})
         with self.assertRaisesRegex(ValueError, 'stock sample page'):
@@ -456,7 +454,7 @@ class OutsideMachines(unittest.TestCase):
         value = dict(json.loads(real(path)), sdk='1.3', presets='.')
         with mock.patch.object(Path, 'read_text',
                                lambda self, *a, **k: json.dumps(value) if self == path else real(self, *a, **k)):
-            with self.assertRaisesRegex(ValueError, 'effects have none'):
+            with self.assertRaisesRegex(ValueError, 'instrument preset folder'):
                 machines.machine_at(FOLDER / 'probefx')
 
 

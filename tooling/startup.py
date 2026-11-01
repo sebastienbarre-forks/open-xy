@@ -13,22 +13,26 @@ def _declare(name, signature='()'):
     return f'int {name}{signature} __asm__("{name}");'
 
 
-def render(prefixes, effects=(), stock_page=(), sample_screens=(), effect_screens=()):
+def render(prefixes, effects=(), stock_page=(), sample_screens=(), effect_screens=(), player_pages=()):
     """stock_page: engines that show a stock page (e.g. sample engines on the
     sampler page); they register on the GUI role without an own-page guard.
     sample_screens: those of them that also draw their own screen over it.
     effect_screens: effects that draw their own page (SDK 1.7), whose screen
     registers on the GUI role."""
-    require(1 <= len(prefixes) <= ENGINE_COUNT and len(set(prefixes)) == len(prefixes),
+    require(prefixes or effects or player_pages, 'Startup needs at least one machine')
+    require(0 <= len(prefixes) <= ENGINE_COUNT and len(set(prefixes)) == len(prefixes),
             'Startup needs distinct engine prefixes')
     require(len(set(effects)) == len(effects) <= EFFECT_COUNT and not set(effects) & set(prefixes),
             'Startup needs distinct effect prefixes')
     require(set(stock_page) <= set(prefixes), 'Stock-page engines must be listed engines')
     require(set(sample_screens) <= set(stock_page), 'Sample screens must be stock-page engines')
-    require(set(effect_screens) <= set(effects), 'Effects with their own page must be listed effects')
-    for prefix in (*prefixes, *effects):
+    require(len(set(player_pages)) == len(player_pages) and not set(player_pages) & (set(prefixes) | set(effects)),
+            'Startup needs distinct player prefixes')
+    for prefix in (*prefixes, *effects, *player_pages):
         require(re.fullmatch(r'[a-z][a-z0-9_]{0,31}', prefix) is not None, 'Invalid engine prefix')
     declarations = [_declare(prefix + '_fx_register') for prefix in effects]
+    declarations += [_declare(prefix + '_screen_register') for prefix in player_pages]
+    require(set(effect_screens) <= set(effects), 'Effects with their own page must be listed effects')
     for prefix in effect_screens:
         declarations += [_declare(prefix + '_screen_register'), _declare(prefix + '_ready'),
                          f'extern const char {prefix}_fx_page_id[] __asm__("{prefix}_fx_page_id");']
@@ -50,6 +54,7 @@ def render(prefixes, effects=(), stock_page=(), sample_screens=(), effect_screen
         if prefix in sample_screens:
             screens.append(f'    {prefix}_screen_register();')
         screens.append(f'    {guard}{prefix}_register();')
+    screens += [f'    {prefix}_screen_register();' for prefix in player_pages]
     catalog = [f'    if ({prefix}_name_matches(name))\n'
                f'        return id == value({prefix}_engine_id) && {prefix}_ready() == 1 ? '
                'stock_catalog_insert(catalog, name, id) : 0;' for prefix in prefixes]
@@ -71,7 +76,7 @@ def render(prefixes, effects=(), stock_page=(), sample_screens=(), effect_screen
     return source
 
 
-def generate(directory, prefixes, effects=(), stock_page=(), sample_screens=(), effect_screens=()):
+def generate(directory, prefixes, effects=(), stock_page=(), sample_screens=(), effect_screens=(), player_pages=()):
     destination = Path(directory) / 'startup.cpp'
-    destination.write_text(render(prefixes, effects, stock_page, sample_screens, effect_screens), encoding='utf-8', newline='\n')
+    destination.write_text(render(prefixes, effects, stock_page, sample_screens, effect_screens, player_pages), encoding='utf-8', newline='\n')
     return destination
