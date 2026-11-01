@@ -248,7 +248,7 @@ class OutsideMachines(unittest.TestCase):
         for version in ('1.1', '1.2', '1.3', '1.4'):
             self.rename('fmcopy', self.free, version)
             self.assertEqual(machines.machine_at(self.folder).id, 'fmcopy')
-        for version in ('1.5', '1.6', '1.7', '1.8', '1.9'):
+        for version in ('1.5', '1.6', '1.7'):
             self.numberless(self.folder, sdk=version)
             self.assertEqual(machines.machine_at(self.folder).id, 'fmcopy')
         future = '%d.%d' % (machines.SDK_VERSION[0], machines.SDK_VERSION[1] + 1)
@@ -283,15 +283,15 @@ class OutsideMachines(unittest.TestCase):
         shutil.copytree(FOLDER / name, folder)
         return folder
 
-    def test_more_than_256_display_nodes_need_sdk_1_9(self):
+    def test_more_than_256_display_nodes_need_sdk_1_8(self):
         path = self.folder / 'definition.json'
         definition = json.loads(path.read_text(encoding='utf-8'))
         definition['resources']['display']['nodes'] = 300
         path.write_text(json.dumps(definition), encoding='utf-8')
-        self.numberless(self.folder, sdk='1.8')
+        self.numberless(self.folder, sdk='1.7')
         with self.assertRaisesRegex(ValueError, 'More than 256 display nodes'):
             machines.machine_at(self.folder)
-        self.numberless(self.folder, sdk='1.9')
+        self.numberless(self.folder, sdk='1.8')
         self.assertEqual(machines.machine_at(self.folder).id, 'fmcopy')
 
     def test_sdk_1_5_machines_name_no_numbers(self):
@@ -412,7 +412,7 @@ class OutsideMachines(unittest.TestCase):
         value = dict(json.loads(real(path)), sdk='1.3', presets='.')
         with mock.patch.object(Path, 'read_text',
                                lambda self, *a, **k: json.dumps(value) if self == path else real(self, *a, **k)):
-            with self.assertRaisesRegex(ValueError, 'effects have none'):
+            with self.assertRaisesRegex(ValueError, 'instrument preset folder'):
                 machines.machine_at(FOLDER / 'probefx')
 
 

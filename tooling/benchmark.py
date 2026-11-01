@@ -99,6 +99,7 @@ def combined_positions(results):
 
 
 def generate(directory, machines, sweep=False):
+    machines = [m for m in machines if m.kind != 'player']
     declarations, rows, settings, defaults = [], [], [], []
     for index, m in enumerate(benchmarked(machines)):
         swept = sweep_settings(m) if sweep and m.kind == 'synth' else []

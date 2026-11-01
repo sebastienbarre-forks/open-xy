@@ -13,6 +13,7 @@
 #include "synth_controls.hpp"
 #include "drum_machines.hpp"
 #include "drum_storage.hpp"
+#include "keyboard_octaves.hpp"
 #include "stock_sample.hpp"
 #include "sample_machines.hpp"
 // Stock assembly imports use explicit names; all other C symbols keep the ABI prefix.
@@ -95,7 +96,7 @@ extern const void* const @PREFIX@_vtable[];
 int @PREFIX@_start(void* self, opxy::u32 key) {
     Handle* handle = static_cast<Handle*>(self);
     const bool keyed = key < 128 && handle->track < 8;
-    handle->key = keyed ? opxy::platform::sample_drum_key(key, sdk_sample_drum_octaves[handle->track]) : 53;
+    handle->key = keyed ? opxy::platform::sample_drum_key(key, sdk_track_octaves[handle->track]) : 53;
     const opxy::u32 id = owner(handle);
     Slot* slot = held(handle);
     if (!slot) {

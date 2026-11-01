@@ -24,7 +24,7 @@ def identifier(value):
 # The stock firmware's own engine and effect types (stock 1.2.1 catalog).
 STOCK_TYPES = frozenset({'sampler', 'drum', 'drumline', 'organ', 'epiano', 'prism', 'hardsync', 'dissolve', 'axis',
                          'wavetable', 'simple', 'midi', 'multisampler',
-                         'delay', 'reverb', 'chorus', 'phaser', 'dist', 'lofi'})
+                         'delay', 'reverb', 'chorus', 'phaser', 'dist', 'lofi', 'arpeggio', 'hold', 'maestro'})
 # Symbol namespaces the SDK and firmware glue use; a machine's name prefixes its symbols.
 RESERVED_PREFIXES = ('extensions', 'sdk', 'kit', 'stock', 'local')
 # A machine's name is also its C++ namespace.
@@ -63,6 +63,7 @@ RESOURCES = {
     'drum': ('voiceBytes', 'voiceAlignment', 'voiceCapacity', 'sharedBytes', 'outputPeakQ31', 'display', 'modelCount'),
     'sample': ('voiceCapacity',),
     'effect': (),
+    'player': (),
 }
 # A synth's own screen: one drawing contract (opxy/draw.hpp); the machine
 # declares its frame's budget within these limits.
@@ -70,8 +71,8 @@ DISPLAY_FIELDS = ('stateBytes', 'stateAlignment', 'paths', 'points', 'nodes', 't
 DISPLAY_LIMITS = dict(paths=(0, 4), points=(0, 64), nodes=(1, 512), texts=(0, 32), palette=(1, 16))
 # More text slots than these need SDK 1.3 and 1.7 (tooling.machines).
 SDK_1_2_TEXTS, SDK_1_6_TEXTS = 4, 16
-# Nodes a display could hold before SDK 1.9.
-SDK_1_8_NODES = 256
+# Nodes a display could hold before SDK 1.8.
+SDK_1_7_NODES = 256
 # Analysis storage is allocated from the stock heap at runtime, which also holds
 # stock samples; a collection's analysis budgets together take at most this much.
 ANALYSIS_HEAP_LIMIT = 2 * 1024 * 1024
@@ -82,7 +83,7 @@ SAMPLE_OPTIONS = ('sampleAnalysis', *SAMPLE_FLAGS)
 # 512 KiB; and transport 1 for the tempo in process (SDK 1.2).
 # An effect's display (SDK 1.7): it draws its own page on the sends, as a synth does.
 EFFECT_OPTIONS = ('bufferBytes', 'transport', 'display')
-# A drum kit's models in named groups (SDK 1.9), which Shift and the first encoder choose;
+# A drum kit's models in named groups (SDK 1.8), which Shift and the first encoder choose;
 # and chokeSameKey 1 for a note to cut the voices still sounding its track's same key.
 DRUM_OPTIONS = ('modelGroups', 'chokeSameKey')
 EFFECT_BUFFER_LIMIT = 524288
@@ -91,7 +92,7 @@ DISPLAY_FORMATS = ('ratio', 'percent', 'bipolar', 'duration', 'semitones', 'enum
 # A synth's first four fill the four-control page; up to four more are alternates
 # (see control_positions). Sample engines and effects use one to eight; an
 # effect's after the first four are alternates on the send page.
-CONTROLS = {'synth': (4, 8), 'drum': (8, 8), 'sample': (1, 8), 'effect': (1, 8)}
+CONTROLS = {'synth': (4, 8), 'drum': (8, 8), 'sample': (1, 8), 'effect': (1, 8), 'player': (4, 4)}
 # Stock voice indices: a voice object for each, 0..255.
 STOCK_VOICES = 256
 SYNTH_POSITIONS = 4

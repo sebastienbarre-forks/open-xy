@@ -57,7 +57,7 @@ opxy::u32 fixture_pitch[opxy::block_frames], captured_pitch[opxy::block_frames];
 opxy::i32 fixture_amplitude[opxy::block_frames];
 bool negative_output;
 unsigned destroyed[257], initialized[257], started[257];
-volatile opxy::i32 sdk_sample_drum_octaves[8];
+volatile opxy::i32 sdk_track_octaves[8];
 extern "C" const char probe_engine_id[] = "probe";
 const char* sdk_drum_title(opxy::u32, opxy::u32) { return "parameter"; }
 #define CHECK(condition) do { if (!(condition)) { std::fprintf(stderr, "line %d: %s\n", __LINE__, #condition); return 1; } } while (0)
@@ -98,7 +98,7 @@ int main() {
     CHECK(rendered(0) == 0);
     CHECK(!is_active(0));
     // Track one's octave turns raw note 53 into pad 65; defaults must use 65.
-    sdk_sample_drum_octaves[1] = 1;
+    sdk_track_octaves[1] = 1;
     note(1, 53);
     CHECK(rendered(1) == 2 && model() == 5 && raw(7) == 65 && raw(0) == 65);
     for (unsigned i = 0; i < opxy::block_frames; ++i)

@@ -3,6 +3,7 @@
 #include <initializer_list>
 static void host_barrier() {}
 #include <drum_controls_stock.cpp>
+#include <keyboard_octaves.cpp>
 // This fixture has no synthesis drum kits.
 const opxy::platform::DrumMachine* sdk_drum_machine(opxy::u32) { return nullptr; }
 

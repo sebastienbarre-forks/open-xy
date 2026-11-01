@@ -36,7 +36,7 @@ void display(DisplayState& state, const opxy::draw::Input& input, Frame& output)
 | --- | --- |
 | `paths` | 0..4 mutable outlines; they are nodes `0..paths-1` |
 | `points` | 2..64 points per outline; 0 when there are no paths |
-| `nodes` | `paths`..512 transformable elements; more than 256 need `"sdk": "1.9"` |
+| `nodes` | `paths`..512 transformable elements; more than 256 need `"sdk": "1.8"` |
 | `texts` | 0..32 text slots; more than 4 need `"sdk": "1.3"`, more than 16 `"sdk": "1.7"` |
 | `palette` | 1..16 paint entries |
 | `stateBytes`, `stateAlignment` | `DisplayState` size (whole words) and alignment, checked against the compiled type |
@@ -130,7 +130,7 @@ the note activity: `shift`, 1 while Shift is held on an effect with a
 [shift row](api.md#effect-pages-and-shift-rows), and `choices`, each shift
 control's choice (0 beyond the declared ones). A synth's page reads 0 in both.
 
-### Shift and a drum kit's machine (SDK 1.9)
+### Shift and a drum kit's machine (SDK 1.8)
 
 | Field | Meaning |
 | --- | --- |

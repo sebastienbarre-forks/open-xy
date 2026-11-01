@@ -62,7 +62,7 @@ struct Input {
     u32 held_notes;          // Distinct gated MIDI pitches, 0..128; notes_unavailable if unknown.
     u32 note_off_serial;     // Gate closures, excluding duplicate releases and audio release tails.
     // While Shift is held: 1, and each Shift control's choice, 0 beyond the
-    // declared ones (an effect's shift row, SDK 1.7; a drum kit's, SDK 1.9).
+    // declared ones (an effect's shift row, SDK 1.7; a drum kit's, SDK 1.8).
     // A drum kit's choices are its selected key's model group, its model in
     // the group and its choke group, or without groups its model and choke
     // group; they hold at all times, shift only while Shift is held.
