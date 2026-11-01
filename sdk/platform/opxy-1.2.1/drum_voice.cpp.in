@@ -47,10 +47,10 @@ static_assert(sizeof(Voice) == @VOICE_BYTES@, "Declared voice size differs from 
 static_assert(alignof(Voice) == @VOICE_ALIGNMENT@, "Declared voice alignment differs from the compiled type");
 static_assert(@SHARED_BYTES@ == 0 ? __is_empty(Shared) : sizeof(Shared) == @SHARED_BYTES@,
               "Declared shared size differs from the compiled type");
-static const opxy::u32* const increments = reinterpret_cast<const opxy::u32*>(opxy::platform::kPitchIncrements);
+static const opxy::u32* const stock_increments = reinterpret_cast<const opxy::u32*>(opxy::platform::kPitchIncrements);
 // The alternate stock renderer prepares this gain/envelope vector but leaves
 // its application to the drum DSP (stock Drumline consumes it at 11a0743e).
-static const opxy::i32* const amplitude = reinterpret_cast<const opxy::i32*>(0x11903400);
+static const opxy::i32* const stock_amplitude = reinterpret_cast<const opxy::i32*>(0x11903400);
 // A stable nonzero voice ID: the stock voice index plus one.
 static opxy::u32 owner(const Handle* handle) { return static_cast<opxy::u32>(handle - handles) + 1; }
 // How the kit's keys are stored, from its models' control counts: built on the
@@ -148,8 +148,8 @@ void* @PREFIX@_factory(opxy::u32 index, opxy::u32 track) {
 }
 // The drum classifier sets voice+0x4e, selecting 8d51b274. Its call at
 // 8d51b55a uses +12 with the payload in R2 and track parameters on the stack.
-int @PREFIX@_render(void* self, opxy::i32* output, const opxy::i32* region,
-                   const opxy::i32* parameters) {
+static inline void render_voice(void* self, opxy::i32* output, const opxy::i32* region, const opxy::i32* parameters,
+                                const opxy::u32* increments, const opxy::i32* amplitude) {
     if (Slot* slot = held(static_cast<Handle*>(self))) {
         const Handle* handle = static_cast<const Handle*>(self);
         opxy::u8 model, stored[8];
@@ -190,6 +190,10 @@ int @PREFIX@_render(void* self, opxy::i32* output, const opxy::i32* region,
     } else {
         for (unsigned i = 0; i < opxy::block_frames; ++i) output[i] = 0;
     }
+}
+int @PREFIX@_render(void* self, opxy::i32* output, const opxy::i32* region,
+                   const opxy::i32* parameters) {
+    render_voice(self, output, region, parameters, stock_increments, stock_amplitude);
     return 0;
 }
 // +8 belongs to stock's other renderer. Never leave its output scratch stale

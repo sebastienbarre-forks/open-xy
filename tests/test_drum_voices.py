@@ -20,6 +20,7 @@ extern opxy::u32 fixture_pitch[opxy::block_frames], captured_pitch[opxy::block_f
 extern opxy::i32 fixture_amplitude[opxy::block_frames];
 extern bool negative_output;
 extern unsigned destroyed[257], initialized[257], started[257];
+extern unsigned bench_rendered[12][128], clock_value;
 namespace probe {
 struct Voice { opxy::u32 owner; };
 struct Shared {};
@@ -57,9 +58,11 @@ opxy::u32 fixture_pitch[opxy::block_frames], captured_pitch[opxy::block_frames];
 opxy::i32 fixture_amplitude[opxy::block_frames];
 bool negative_output;
 unsigned destroyed[257], initialized[257], started[257];
+unsigned bench_rendered[12][128], clock_value;
 volatile opxy::i32 sdk_track_octaves[8];
 extern "C" const char probe_engine_id[] = "probe";
 const char* sdk_drum_title(opxy::u32, opxy::u32) { return "parameter"; }
+extern "C" opxy::u32 sdk_benchmark_cycles() { return 0; }
 #define CHECK(condition) do { if (!(condition)) { std::fprintf(stderr, "line %d: %s\n", __LINE__, #condition); return 1; } } while (0)
 namespace {
 void* objects[256];
@@ -255,6 +258,76 @@ int main() {
 """
 
 
+BENCH_ENGINE = """#include "core.h"
+namespace probe {
+inline void initialize(Voice& v, Shared&, opxy::u32 id) { v.owner = id; ++initialized[id]; }
+inline void start(Voice&, Shared&, opxy::u32 id) { ++started[id]; }
+inline void destroy(Voice&, Shared&, opxy::u32 id) { ++destroyed[id]; }
+inline void drum_defaults(opxy::u32 key, opxy::u8* model, opxy::u8* raw) {
+    *model = key % 12;
+    for (unsigned i = 0; i < 8; ++i) raw[i] = 90;
+}
+inline void drum_select(Voice&, Shared&, opxy::u32, opxy::u32 model) { captured_model = model; }
+inline const char* parameter_name(opxy::u32, opxy::u32) { return "parameter"; }
+inline const char* model_name(opxy::u32) { return "model"; }
+inline opxy::u32 parameter_count(opxy::u32) { return 8; }
+inline void render(Voice&, Shared&, opxy::u32, opxy::Output output, opxy::Parameters parameters, opxy::Pitch pitch) {
+    for (unsigned i = 0; i < 8; ++i) captured[i] = parameters[i];
+    captured_pitch[0] = pitch[0];
+    ++bench_rendered[captured_model][static_cast<opxy::u32>(parameters[0]) >> 24];
+    // Model 7 at level 127 runs far the longest, by the fixture's clock.
+    if (captured_model == 7 && parameters[0] == 0x7fffffff) clock_value += 5000;
+    for (unsigned i = 0; i < opxy::block_frames; ++i) output[i] = captured_model == 3 ? 0 : 65536;
+}
+}
+"""
+BENCH_DRIVER = r"""#include "voice.cpp"
+#include <cstdio>
+opxy::i32 captured[8];
+opxy::u32 captured_model = 99;
+opxy::u32 fixture_pitch[opxy::block_frames], captured_pitch[opxy::block_frames];
+opxy::i32 fixture_amplitude[opxy::block_frames];
+bool negative_output;
+unsigned destroyed[257], initialized[257], started[257];
+unsigned bench_rendered[12][128];
+unsigned clock_value;
+volatile opxy::i32 sdk_track_octaves[8];
+extern "C" const char probe_engine_id[] = "probe";
+const char* sdk_drum_title(opxy::u32, opxy::u32) { return "parameter"; }
+extern "C" opxy::u32 sdk_benchmark_cycles() { return clock_value += 100; }
+namespace opxy { namespace benchmark { void* allocate(u32) { return nullptr; } void release(void*) {} }}
+#define CHECK(condition) do { if (!(condition)) { std::fprintf(stderr, "line %d: %s\n", __LINE__, #condition); return 1; } } while (0)
+int main() {
+    // A run a report: the kit, 12 models at three levels, the choke, the ceiling.
+    const opxy::benchmark::Stats kit = probe_benchmark(0);
+    CHECK(kit.count == 1500 && kit.audible && kit.total_low > 0);
+    CHECK(captured[0] == 90 << 24);   // the kit's own keys, unmarked, from their defaults
+    for (unsigned model = 0; model < 12; ++model)
+        for (unsigned level = 0; level < 3; ++level) {
+            const unsigned before = bench_rendered[model][level == 0 ? 64 : level == 1 ? 0 : 127];
+            const opxy::benchmark::Stats one = probe_benchmark(1 + model * 3 + level);
+            CHECK(one.count == 1500 && one.audible);   // a silent model still reports its cost
+            CHECK(captured_model == model);
+            CHECK(bench_rendered[model][level == 0 ? 64 : level == 1 ? 0 : 127] == before + 1500);
+        }
+    CHECK(benchmark_model == 7 && kBenchmarkLevels[benchmark_level] == 127);
+    // The choke: two voices on one key, the heaviest model, the old one fading and freed.
+    const unsigned freed = destroyed[256] + destroyed[255];
+    const opxy::benchmark::Stats choke = probe_benchmark(12 * 3 + 1);
+    CHECK(choke.count == 1500 && choke.audible && captured_model == 7);
+    CHECK(destroyed[256] + destroyed[255] > freed + 100);
+    // The ceiling: every voice at once, far above one.
+    const opxy::benchmark::Stats ceiling = probe_benchmark(12 * 3 + 2);
+    CHECK(ceiling.count == 1500 && captured_model == 7);
+    CHECK(ceiling.total_low > 3 * (kit.total_low / 4));
+    CHECK(captured_pitch[0] == (25480118u >> 16) << 16);
+    // Every voice is back: a real note after the workload takes a free slot.
+    for (const auto& slot : voices) CHECK(!slot.owner);
+    return 0;
+}
+"""
+
+
 class DrumVoices(unittest.TestCase):
     def run_adapter(self, engine, driver, capacity, **resources):
         definition = copy.deepcopy(fixture('probesynth').definition)
@@ -293,6 +366,23 @@ class DrumVoices(unittest.TestCase):
         # Without chokeSameKey or a finished hook: handles 0 and 200 share track
         # zero and key 53 and both keep sounding.
         self.run_adapter(ENGINE, DRIVER, 2)
+
+    def test_a_kit_is_in_the_control_and_lfo_tables(self):
+        # Staging's table declares by kind: a kit needs its engine ID, ready check and LFO row there too.
+        from dataclasses import replace
+        from tooling.adapters import generate_synth_controls
+        base = fixture('probesynth')
+        definition = dict(base.definition, resources=dict(base.definition['resources'], modelCount=2))
+        drum = replace(base, kind='drum', id='probedrum', definition=definition)
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(generate_synth_controls(directory, [drum])).read_text(encoding='utf-8')
+        for line in (f'{drum.prefix}_record_ready() __asm__', f'extern const char {drum.prefix}_engine_id[] __asm__',
+                     f'{{{drum.prefix}_engine_id, {drum.prefix}_record_ready, '):
+            self.assertIn(line, source)
+
+    @unittest.skipUnless(HOST_CXX, 'No working host C++ compiler (set OPXY_TEST_HOST_CXX)')
+    def test_the_profiling_workload_drives_every_model_through_the_adapter(self):
+        self.run_adapter(BENCH_ENGINE, BENCH_DRIVER, 4, chokeSameKey=1)
 
     @unittest.skipUnless(HOST_CXX, 'No working host C++ compiler (set OPXY_TEST_HOST_CXX)')
     def test_same_key_choke_fades_the_old_voice_and_finished_frees_it(self):

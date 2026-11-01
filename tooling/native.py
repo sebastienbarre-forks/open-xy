@@ -302,7 +302,7 @@ def absent_symbols(m):
             absent.update({symbol: 'kit_absent' for symbol in sample_callbacks(m)})
         else:
             absent[m.prefix + '_screen_register'] = 'kit_absent'
-    if m.kind in ('effect', 'sample'):
+    if m.kind in ('effect', 'sample', 'drum'):
         absent[m.prefix + '_benchmark'] = 'kit_absent'
     return absent
 

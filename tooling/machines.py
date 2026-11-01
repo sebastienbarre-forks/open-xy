@@ -343,7 +343,7 @@ def machine_at(root, identity=None):
     presets = None
     if 'presets' in value:
         require_sdk(version, (1, 3), "A machine's own presets")
-        require(kind in ('synth', 'sample') and isinstance(value['presets'], str), 'presets names an instrument preset folder')
+        require(kind in ('synth', 'drum', 'sample') and isinstance(value['presets'], str), 'presets names an instrument preset folder')
         presets = read_presets(root, value['presets'], identity)
     return Machine(id=identity, kind=kind, name=definition['name'], description=value['description'],
                    display=display, sources=sources, includes=includes,

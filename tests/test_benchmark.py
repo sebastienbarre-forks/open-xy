@@ -34,13 +34,25 @@ class Benchmark(unittest.TestCase):
             self.assertIn('probefx_benchmark', source)
             self.assertIn('probesample_benchmark', source)
             empty = generate(folder, []).read_text(encoding='utf-8')
-            self.assertIn('{0, 0, 0, 0, 0}', empty)
+            self.assertIn('{0, 0, 0, 0, 0, 0, 0}', empty)
 
-    def test_a_drum_kit_is_not_benchmarked(self):
-        drum = replace(fixture('probesynth'), kind='drum', id='probedrum')
-        self.assertEqual([c['name'] for c in cases([drum, fixture('probefx')])[9:]], ['probefx'])
+    def test_a_drum_kit_runs_each_model_and_level_then_the_whole_kit(self):
+        from tooling.benchmark import case_label, drum_cases
+        base = fixture('probesynth')
+        definition = dict(base.definition, resources=dict(base.definition['resources'], modelCount=3, voiceCapacity=8))
+        drum = replace(base, kind='drum', id='probedrum', definition=definition)
+        own = cases([drum, fixture('probefx')])[9:]
+        runs = [c['drum']['run'] for c in own if c['name'] == 'probedrum']
+        self.assertEqual(runs, ['kit'] + ['voice'] * 9 + ['choke', 'ceiling'])
+        self.assertEqual(own[-1]['name'], 'probefx')
+        self.assertEqual({(c['drum']['model'], c['drum']['level']) for c in own if c.get('drum', {}).get('run') == 'voice'},
+                         {(m, l) for m in range(3) for l in (0, 64, 127)})
+        self.assertEqual(all(c['benchmark'] == 'opxy-drum-callback-v1' for c in own[:-1]), True)
+        self.assertEqual(case_label(own[1]), 'model 0 at 64')
         with tempfile.TemporaryDirectory() as folder:
-            self.assertNotIn('probedrum', generate(folder, [drum]).read_text(encoding='utf-8'))
+            source = generate(folder, [drum]).read_text(encoding='utf-8')
+        for run in range(len(drum_cases(drum))):
+            self.assertIn(f'probedrum_ready, nullptr, 3, {drum.prefix}_benchmark, {run}}}', source.replace('probesynth_ready', 'probedrum_ready'))
 
     def test_a_sweep_runs_each_synth_control_through_its_positions_after_the_standard_run(self):
         from tooling.benchmark import SWEEP, sweep_settings

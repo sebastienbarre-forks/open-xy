@@ -66,7 +66,8 @@ def generate_voice(directory, m, sweep=False):
     if m.kind == 'drum':
         values['MODEL_COUNT'] = m.definition['resources']['modelCount']
         values['CHOKE'] = 'true' if m.definition['resources'].get('chokeSameKey', 0) else 'false'
-    return expand('drum_voice.cpp.in' if m.kind == 'drum' else 'voice.cpp.in', values, Path(directory) / 'voice.cpp')
+    path = expand('drum_voice.cpp.in' if m.kind == 'drum' else 'voice.cpp.in', values, Path(directory) / 'voice.cpp')
+    return append_callback(path, m) if m.kind == 'drum' else path
 
 
 def generate_drum_callbacks(directory, machines):
@@ -357,7 +358,7 @@ def generate_synth_controls(directory, machines):
     """Synth ownership, alternate selection and continuous fine controls."""
     declarations, rows, formatters, lfo_rows = [], [], [], []
     for m in machines:
-        if m.kind in ('synth', 'sample'):
+        if m.kind in ('synth', 'drum', 'sample'):
             declarations.append(f'int {m.prefix}_record_ready() __asm__("{m.prefix}_record_ready");')
             declarations.append(f'extern const char {m.prefix}_engine_id[] __asm__("{m.prefix}_engine_id");')
             controls = ', '.join(str((i if position is None else position) % 4) for i, position in enumerate(control_positions(m.definition)))
