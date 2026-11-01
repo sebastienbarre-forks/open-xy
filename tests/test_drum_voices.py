@@ -306,6 +306,7 @@ namespace opxy { namespace benchmark { void* allocate(u32) { return nullptr; } v
 #define CHECK(condition) do { if (!(condition)) { std::fprintf(stderr, "line %d: %s\n", __LINE__, #condition); return 1; } } while (0)
 int main() {
     // A run a report: the kit, 12 models at three levels, the choke, the ceiling.
+    unsigned heaviest = 0;
     const opxy::benchmark::Stats kit = probe_benchmark(0);
     CHECK(kit.count == 1500 && kit.audible && kit.total_low > 0);
     CHECK(captured[0] == 90 << 24);   // the kit's own keys, unmarked, from their defaults
@@ -314,6 +315,7 @@ int main() {
             const unsigned before = bench_rendered[model][level == 0 ? 64 : level == 1 ? 0 : 127];
             const opxy::benchmark::Stats one = probe_benchmark(1 + model * 3 + level);
             CHECK(one.count == 1500 && one.audible);   // a silent model still reports its cost
+            if (model == 7 && level == 2) heaviest = one.total_low;
             CHECK(captured_model == model);
             CHECK(bench_rendered[model][level == 0 ? 64 : level == 1 ? 0 : 127] == before + 1500);
         }
@@ -326,7 +328,7 @@ int main() {
     // The ceiling: every voice at once, far above one.
     const opxy::benchmark::Stats ceiling = probe_benchmark(12 * 3 + 2);
     CHECK(ceiling.count == 1500 && captured_model == 7);
-    CHECK(ceiling.total_low > 3 * (kit.total_low / 4));
+    CHECK(ceiling.total_low > 3 * heaviest);   // all four voices sound, on keys of their own: a same-key choke would leave one
     CHECK(captured_pitch[0] == (25480118u >> 16) << 16);
     // Every voice is back: a real note after the workload takes a free slot.
     for (const auto& slot : voices) CHECK(!slot.owner);
