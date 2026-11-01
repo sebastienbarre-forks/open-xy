@@ -69,10 +69,8 @@ int add(const Registry&, const Pages&, const Record&);
 int add_screen(const Pages&, const Record&, const Screen&);
 // 1 only while the record (and, given a screen, its loaded page) is ours.
 // Read-only: calls no stock getter, allocator, registrar or resolver.
-int ready(const Registry&, const Pages&, const Record&, const Screen*);
-// A screen registered at its record's page and loaded, apart from any engine:
-// a sample engine's own screen (its engine shows a stock page).
 int screen_ready(const Pages&, const Record&, const Screen&);
+int ready(const Registry&, const Pages&, const Record&, const Screen*);
 // 1 when a stock string holds exactly the record's name.
 int name_matches(const Record&, const StockString*);
 // 1 when the name resolves to a registered entry, or before the name map exists
