@@ -99,7 +99,9 @@ def configuration(entries=None, layout=None):
             definitions[m.prefix + '_fx_page_id'] = m.identity['page']
         else:
             definitions[m.prefix + '_engine_id'] = m.identity['engine']
-            definitions[m.prefix + '_page_id'] = m.identity['page']
+            definitions[m.prefix + '_page_id'] = m.sample_page if m.kind == 'sample' else m.identity['page']
+            if m.kind == 'sample' and m.display != 'stock':   # a sample engine's own screen
+                definitions[m.prefix + '_screen_page_id'] = m.identity['page']
     return profile, machines, definitions
 
 
@@ -193,7 +195,7 @@ def plan(machines, profile=None):
         elif m.kind == 'effect':
             steps = ('registration', 'fx_object', *(('display', 'screen') if m.display != 'stock' else ()))
         else:
-            steps = ('registration', 'sample_voice')
+            steps = ('registration', 'sample_voice', *(('display', 'screen') if m.display != 'stock' else ()))
         units += [(f'{m.id}/{Path(step.removeprefix("source:")).stem}.o', m, step) for step in steps]
     services = active_services(profile or config(), service_users(machines))
     units += [(f'sdk/{step}.o', None, step) for step in SDK_UNITS
@@ -213,13 +215,13 @@ SDK_UNITS = ('divide', 'memory', 'registration', 'registration_stock', 'startup'
              'screen_hooks', 'synth_controls', 'synth_control_table', 'note_activity', 'project_companion',
              'project_companion_table', 'profiling', 'lfo', 'lfo_stock', 'lfo_hooks', 'stock_browser',
              'extension_runtime', 'extension_collection', 'extension_stock', 'presets',
-             'players', 'player_hooks', 'player_table', 'keyboard_octaves',
+             'players', 'player_hooks', 'player_table', 'keyboard_octaves', 'sample_overview', 'sample_overview_stock',
              'drum_machines', 'drum_callbacks', 'drum_values_stock', 'drum_synthesis_stock', 'drum_hooks')
 # SDK units that exist only for a profile service, linked when a machine needs it.
 UNIT_SERVICES = dict.fromkeys(('sample_machines', 'sample_hooks', 'sample_callbacks', 'sample_cache',
                                'sample_cache_stock', 'sample_cache_hooks', 'sample_progress',
                                'sample_progress_stock', 'pad_assignment', 'pad_assignment_stock', 'drum_page',
-                               'drum_controls_stock', 'sample_slice_clock', 'drum_display_stock'), 'samples')
+                               'drum_controls_stock', 'sample_slice_clock', 'drum_display_stock', 'sample_overview', 'sample_overview_stock'), 'samples')
 UNIT_SERVICES.update(dict.fromkeys(('players', 'player_hooks', 'player_table'), 'players'))
 UNIT_SERVICES['keyboard_octaves'] = 'octaves'
 UNIT_SERVICES.update(dict.fromkeys(('extension_runtime', 'extension_collection', 'extension_stock'), 'extensions'))
@@ -297,11 +299,13 @@ def absent_symbols(m):
             # The shared drum table names these.
             absent.update({m.prefix + suffix: 'kit_absent' for suffix in
                            ('_drum_defaults', '_drum_label', '_drum_model_name', '_drum_count')})
-        if m.display == 'stock':
+        if m.kind == 'sample':
             # The shared sample table names these; unselected, its ready check declines first.
             absent.update({symbol: 'kit_absent' for symbol in sample_callbacks(m)})
-        else:
+        if m.display != 'stock':
             absent[m.prefix + '_screen_register'] = 'kit_absent'
+        if m.kind == 'sample' and m.display != 'stock':
+            absent[m.prefix + '_screen_ready'] = 'kit_absent'
     if m.kind in ('effect', 'sample', 'drum'):
         absent[m.prefix + '_benchmark'] = 'kit_absent'
     return absent
@@ -440,6 +444,7 @@ def compile_collection(directory, toolchain, compiler, profile, machines, defini
                 prefixes = [x.prefix for x in by_kind(machines, 'synth', 'drum', 'sample')]
                 return cxx(str(generate_startup(folder, prefixes, [x.prefix for x in effects],
                                                 [x.prefix for x in sample_engines],
+                                                [x.prefix for x in sample_engines if x.display != 'stock'],
                                                 effect_screens=[x.prefix for x in effects if x.display != 'stock'],
                                                 player_pages=[x.prefix for x in by_kind(machines, 'player')])), obj)
             if (ROOT / TEMPLATES / (step + '.cpp')).is_file():
